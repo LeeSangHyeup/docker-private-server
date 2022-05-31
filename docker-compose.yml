@@ -1,164 +1,25 @@
 version: '2'
 
-volumes:
-  chitchat_static:
-  classifier_static:
-  nlp_static:
-  proxy_static:
-  frontend_static:
-  certbot_www:
-
-networks:
-  chatbot_network:
-    driver: bridge
-
 services:
-  postgres:
-    build: ./dockerfiles/postgres/
-    container_name: chatbot_postgres
+  ghost:
+    image: ghost:4-alpine
+    restart: always
+    ports:
+      - 80:2368
+    environment:
+      # this url value is just an example, and is likely wrong for your environment!
+      url: http://http://lsh.pvt-dev.com:80
+      # contrary to the default mentioned in the linked documentation, this image defaults to NODE_ENV=production (so development mode needs to be explicitly specified if desired)
+      #NODE_ENV: development      
+      # see https://ghost.org/docs/config/#configuration-options
+      database__client: mysql
+      database__connection__host: db
+      database__connection__user: root
+      database__connection__password: example
+      database__connection__database: ghost
+
+  db:
+    image: mysql:8.0
     restart: always
     environment:
-      POSTGRES_USER: "chatbot_proxy_admin"
-      POSTGRES_PASSWORD: "herss1234"
-    networks:
-      - chatbot_network
-    expose:
-      - '5432'
-      
-  mongodb:
-    image: mongo:4.4.4
-    container_name: chatbot_mongodb
-    restart: always
-    expose:
-      - '27017'
-    networks:
-      - chatbot_network
-    volumes:
-      - './dockerfiles/mongodb/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/'
-      
-  chitchat:
-    build: ./dockerfiles/chitchat/
-    container_name: chatbot_chitchat
-    restart: always
-    networks:
-      - chatbot_network
-    expose:
-      - '5009'
-    volumes:
-      - 'chitchat_static:/projects/chitchat-server/static/'
-    entrypoint: ["/bin/bash","-c"]
-    command:
-      - cd /projects/chitchat-server && /usr/local/bin/gunicorn --bind 0.0.0.0:5009 server.wsgi:application --access-logfile /var/log/chatbot/gunicorn/chitchat-access.log --error-logfile /var/log/chatbot/gunicorn/chitchat-error.log --timeout=180
-
-  classifier:
-    build: ./dockerfiles/classifier/
-    container_name: chatbot_classifier
-    restart: always
-    networks:
-      - chatbot_network
-    expose:
-      - '5010'
-    volumes:
-      - 'classifier_static:/projects/classifier-server/static/'
-    entrypoint: ["/bin/bash","-c"]
-    command:
-      - cd /projects/classifier-server && /usr/local/bin/gunicorn --bind 0.0.0.0:5010 server.wsgi:application --access-logfile /var/log/chatbot/gunicorn/classifier-access.log --error-logfile /var/log/chatbot/gunicorn/classifier-error.log --timeout=180
-
-  nlp:
-    build: ./dockerfiles/nlp/
-    container_name: chatbot_nlp
-    restart: always
-    networks:
-      - chatbot_network
-    expose:
-      - '8001'
-    volumes:
-      - 'nlp_static:/projects/natural-language-processor/nlp/static'
-    entrypoint: ["/bin/bash","-c"]
-    command:
-      - cd /projects/natural-language-processor/nlp && /usr/local/bin/gunicorn --bind 0.0.0.0:8001 nlp.wsgi:application --access-logfile /var/log/chatbot/gunicorn/nlp-access.log --error-logfile /var/log/chatbot/gunicorn/nlp-error.log --timeout=180
-
-  rasa:
-    build: ./dockerfiles/rasa/
-    container_name: chatbot_rasa
-    restart: always
-    networks:
-      - chatbot_network
-    expose:
-      - '5005'
-    entrypoint: ["/bin/bash","-c"]
-    command:
-      - /run_rasa_action_server.sh
-    depends_on:
-      - mongodb
-      
-  proxy:
-    build: ./dockerfiles/proxy/
-    container_name: chatbot_proxy
-    restart: always
-    depends_on:
-      - chitchat
-      - classifier
-      - nlp
-      - postgres
-      - rasa
-    links:
-      - postgres:postgres
-    networks:
-      - chatbot_network
-    expose:
-      - '8884'
-    volumes:
-      - 'proxy_static:/projects/chatbot-proxy/static'
-    entrypoint: ["/bin/bash","-c"]
-    command:
-      - /init.sh && /usr/local/bin/gunicorn --bind 0.0.0.0:8884 chatbot_proxy.wsgi:application --access-logfile /var/log/chatbot/gunicorn/proxy-access.log --error-logfile /var/log/chatbot/gunicorn/proxy-error.log
-
-  frontend:
-    build: ./dockerfiles/frontend/
-    container_name: chatbot_frontend
-    depends_on:
-      - proxy
-    expose:
-      - '3000'
-    volumes:
-      - 'frontend_static:/projects/chatbot-frontend/build'
-    networks:
-      - chatbot_network
-
-  nginx:
-    build: ./dockerfiles/nginx/
-    container_name: chatbot_nginx
-    restart: always
-    depends_on:
-      - chitchat
-      - classifier
-      - nlp
-      - proxy
-      - frontend
-    volumes:
-      - ./dockerfiles/nginx/letsencrypt/:/etc/letsencrypt
-      - certbot_www:/var/www/certbot
-    volumes_from:
-      - 'chitchat:ro'
-      - 'classifier:ro'
-      - 'nlp:ro'
-      - 'proxy:ro'
-      - 'frontend:ro'
-    networks:
-      - chatbot_network
-    ports:
-      - '80:80'
-      - '3000:3000'
-      - '8884:8884'
-    command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
-
-  certbot:
-    image: certbot/certbot
-    container_name: chatbot_certbot
-    depends_on:
-      - nginx
-    volumes_from:
-      - nginx
-    entrypoint: "/bin/sh -c 'certbot certonly --webroot --webroot-path=/var/www/certbot -d www.herss4u.com -m sanghyeup.lee@herss.co.kr --agree-tos --force-renewal'"
-    command: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+      MYSQL_ROOT_PASSWORD: example
