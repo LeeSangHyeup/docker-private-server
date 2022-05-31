@@ -25,4 +25,9 @@ if [ ! -e /usr/local/bin/docker-compose ]; then
     sudo chmod +x /usr/local/bin/docker-compose
 fi
 
+# create backup directories
+mkdir -p data/certbot/conf
+mkdir -p data/certbot/www
+mkdir -p data/ghost/content
+
 docker-compose up

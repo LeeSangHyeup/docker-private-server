@@ -1,25 +1,55 @@
 version: '2'
 
+networks:
+  ghost_network:
+    driver: bridge
+
 services:
   ghost:
     image: ghost:4-alpine
+    container_name: ghost_server
+    networks:
+      - ghost_network
     restart: always
-    ports:
-      - 80:2368
+    volumes:
+      - ./data/ghost/content:/var/lib/ghost/content:z
     environment:
-      # this url value is just an example, and is likely wrong for your environment!
-      url: http://http://lsh.pvt-dev.com:80
-      # contrary to the default mentioned in the linked documentation, this image defaults to NODE_ENV=production (so development mode needs to be explicitly specified if desired)
-      #NODE_ENV: development      
-      # see https://ghost.org/docs/config/#configuration-options
+      url: https://lsh.pvt-dev.com
       database__client: mysql
       database__connection__host: db
       database__connection__user: root
       database__connection__password: example
       database__connection__database: ghost
-
   db:
     image: mysql:8.0
+    container_name: ghost_db
+    networks:
+      - ghost_network
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: example
+  nginx:
+    image: nginx:1.17-alpine
+    restart: always
+    container_name: nginx
+    networks:
+      - ghost_network
+    links:
+      - ghost
+    volumes:
+      - ./data/nginx:/etc/nginx/conf.d
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    ports:
+      - "80:80"
+      - "443:443"
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+  certbot:
+    image: certbot/certbot
+    restart: always
+    networks:
+      - ghost_network
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
