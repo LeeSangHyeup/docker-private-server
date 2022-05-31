@@ -30,4 +30,7 @@ mkdir -p data/certbot/conf
 mkdir -p data/certbot/www
 mkdir -p data/ghost/content
 
+# initialize letsencrypt
+./init_letsencrypt.sh
+
 docker-compose up
