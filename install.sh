@@ -33,4 +33,11 @@ mkdir -p data/ghost/content
 # initialize letsencrypt
 ./init_letsencrypt.sh
 
-docker-compose up
+# register as linux service
+if [ ! -e /etc/systemd/system/docker-private-server.service ]; then
+    echo 'register as linux service'
+    sudo cp ./docker-private-server.service /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable docker-private-server
+    sudo systemctl start docker-private-server
+fi

@@ -1,0 +1,12 @@
+[Unit]
+Description=docker-private-server
+After=network.target
+
+[Service]
+User=lsh
+WorkingDirectory=/home/lsh-server/projects/docker-private-server/
+ExecStart=docker-compose up
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

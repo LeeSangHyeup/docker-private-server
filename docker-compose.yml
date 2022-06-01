@@ -47,6 +47,7 @@ services:
   certbot:
     image: certbot/certbot
     restart: always
+    container_name: certbot
     networks:
       - ghost_network
     volumes:
