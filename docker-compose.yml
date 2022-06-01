@@ -6,7 +6,7 @@ networks:
 
 services:
   ghost:
-    image: ghost:4-alpine
+    image: ghost:5-alpine
     container_name: ghost_server
     networks:
       - ghost_network
