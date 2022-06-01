@@ -4,3 +4,9 @@
 
 # old files
 *.old
+
+# backup file
+./data/ghost
+
+# dummy certificate file
+./data/certbot
