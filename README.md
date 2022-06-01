@@ -3,4 +3,4 @@
 
 ghost blog
 - letsencrypt를 통한 HTTPS보안 적용
-- nginx, mysql과 연동하여 작동
+- docker-compose를 통해 nginx, mysql과 연동하여 작동
