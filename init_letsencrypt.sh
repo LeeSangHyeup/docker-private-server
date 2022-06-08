@@ -1,4 +1,5 @@
 #!/bin/bash
+# original source: https://github.com/wmnnd/nginx-certbot/blob/master/init-letsencrypt.sh
 
 domains=(lsh.pvt-dev.com)
 rsa_key_size=4096
